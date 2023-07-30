@@ -1,4 +1,4 @@
-from typing import Optional, List, Callable, Dict, Any, TypeVar
+from typing import Optional, List, Callable, Dict, Any, TypeVar, Tuple
 from abc import ABC
 from enum import Enum, auto
 from prompt_toolkit.styles import Style
@@ -21,11 +21,13 @@ class Choice:
     name: str
     value: Any
     active: bool
+    checked: bool
 
-    def __init__(self, name: str, value: Optional[Any] = None, active: bool = True):
+    def __init__(self, name: str, value: Optional[Any] = None, active: bool = True, checked: bool = False):
         self.name = name
         self.value = value if value is not None else name
         self.active = active
+        self.checked = checked
 
 
 class Separator(Choice):
@@ -33,7 +35,10 @@ class Separator(Choice):
     def __init__(self, value: Optional[str] = None):
         if value is None:
             value = "-" * 15
-        super().__init__(value, "__separator__", active=False)
+        super().__init__(value, value, active=False)
+
+    def render(self) -> List[Tuple[str, str]]:
+        return [("class:separator", self.value)]
 
 
 class QuestionType(Enum):

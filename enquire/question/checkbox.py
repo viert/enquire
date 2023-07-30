@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any, Dict, List, Tuple
+from typing import Optional, Callable, Any, Dict, List, Tuple, Set
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -15,8 +15,8 @@ class Control(FormattedTextControl):
     prompt: str
     choices: List[Choice]
 
-    checked_char: str = "\u25c9"
-    unchecked_char: str = "\u25ef"
+    checked_char: str = "\u2611"
+    unchecked_char: str = "\u2610"
 
     def __init__(self,
                  prompt: str,
@@ -50,7 +50,6 @@ class Control(FormattedTextControl):
         tokens = [
             ("class:qmark", "?"),
             ("class:question", f" {self.prompt}  "),
-            ("class:answer", self.selected.name),
             ("", "\n"),
             self._separator_tokens,
             ("", "\n"),
@@ -61,14 +60,13 @@ class Control(FormattedTextControl):
         tokens = self._get_prompt()
         for idx, choice in enumerate(self.choices):
             selected = idx == self.idx
+            token_class = "selected" if selected else "unselected"
+            char = self.checked_char if choice.checked else self.unchecked_char
             if hasattr(choice, "render"):
                 tokens.extend(choice.render())
-            elif selected:
-                tokens.append(("class:checkbox-selected", f" {self.checked_char} "))
-                tokens.append(("class:choice-selected", choice.name))
             elif choice.active:
-                tokens.append(("class:checkbox-unselected", f" {self.unchecked_char} "))
-                tokens.append(("class:choice-unselected", choice.name))
+                tokens.append((f"class:checkbox-{token_class}", f" {char} "))
+                tokens.append((f"class:choice-{token_class}", choice.name))
             else:
                 tokens.append(("", "   ")),
                 tokens.append(("class:choice-unselected", choice.name))
@@ -87,8 +85,15 @@ class Control(FormattedTextControl):
             if self.selected.active:
                 break
 
+    def toggle(self):
+        self.choices[self.idx].checked = not self.choices[self.idx].checked
 
-class Radio(Question):
+    @property
+    def values(self) -> List[Any]:
+        return [choice.value for choice in self.choices if choice.checked]
+
+
+class Checkbox(Question):
 
     ctrl: Control
 
@@ -97,7 +102,6 @@ class Radio(Question):
                  message: str,
                  *,
                  choices: List[Choice | str],
-                 default: Optional[int] = None,
                  validate: Optional[Callable[[List[Any]], bool]] = None,
                  convert: Optional[Callable[[Any], Any]] = None,
                  when: Optional[Callable[[Dict[str, Any]], bool]] = None,
@@ -128,22 +132,15 @@ class Radio(Question):
         if first_active is None:
             raise ValueError("no active choices found")
 
-        if default is not None:
-            # raise IndexError in case default is out of bounds
-            _ = act_choices[default]
-            act_idx = default
-        else:
-            act_idx = first_active
-
         self.ctrl = Control(
             message,
             act_choices,
-            act_idx,
+            first_active,
             checked_char=checked_char,
             unchecked_char=unchecked_char
         )
 
-    def _interact(self, answers: Dict[str, Any]) -> Any:
+    def _interact(self, answers: Dict[str, Any]) -> List[Any]:
         layout = Layout(HSplit([Window(content=self.ctrl)]))
         kb = KeyBindings()
 
@@ -154,6 +151,10 @@ class Radio(Question):
         @kb.add("up", eager=True)
         def cursor_up(_):
             self.ctrl.move_cursor_up()
+
+        @kb.add("space", eager=True)
+        def toggle(_):
+            self.ctrl.toggle()
 
         @kb.add("c-c", eager=True)
         def _exit(event: KeyPressEvent):
@@ -166,4 +167,4 @@ class Radio(Question):
 
         app = Application(layout=layout, key_bindings=kb, style=self._style)
         app.run()
-        return self.ctrl.selected.value
+        return self.ctrl.values
