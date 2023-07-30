@@ -19,7 +19,7 @@ keywords = [
     "python-inquiry",
     "inquirer"
 ]
-license = "MIT"
+license = {text = "MIT"}
 classifiers = [
     "Programming Language :: Python :: 3",
 ]
