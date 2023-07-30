@@ -26,6 +26,7 @@ classifiers = [
 dependencies = [
     "python_toolkit",
 ]
+readme = "README.md"
 
 [project.urls]
 repository = "https://github.com/viert/enquire"
