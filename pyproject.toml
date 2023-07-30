@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enquire"
-version = "0.0.3"
+version = "0.0.4"
 authors = [{name = "Pavel Vorobyev", email = "viert.ru@gmail.com"}]
 description = "PyInquirer-inspired prompt library"
 repository = "https://github.com/viert/enquire"
