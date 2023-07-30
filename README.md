@@ -2,9 +2,9 @@
 
 ### Goal
 
-**Enquire** is a pet-project with no ambitions. However, a bit of a history my shed some light on the project goals.
+**Enquire** is a pet project with no ambitions. However, a bit of history might shed some light on the project goals.
 
-> _It was a cold April morning and the dew on the grass was frozen like tiny piece of glass._
+> _It was a cold April morning and the dew on the grass was frozen like a tiny piece of glass._
 > 
 > _Eric Cartman_
 
