@@ -104,6 +104,8 @@ class Radio(Question):
                  checked_char: Optional[str] = None,
                  unchecked_char: Optional[str] = None,
                  ):
+        if validate is not None:
+            raise NotImplementedError("validate functions are not implemented for Radio yet")
         super().__init__(
             name,
             message,

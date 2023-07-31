@@ -2,14 +2,11 @@ from typing import Optional, List, Callable, Dict, Any, TypeVar, Tuple
 from abc import ABC
 from enum import Enum, auto
 from prompt_toolkit.styles import Style
-
-# Validator accepts the current answers dict and the current raw answer given
-# and must return True if validation has passed and False otherwise
-Validator = TypeVar("Validator", bound=Callable[[Dict[str, Any], Any], bool])
+from enquire.validation import ValidationFunc
 
 # Converter accepts the current answers dict and the current raw answer given
 # and must return a converted value that will later be passed to the answers dict
-Converter = TypeVar("Converter", bound=Callable[[Dict[str, Any], Any], Any])
+Converter = TypeVar("Converter", bound=Callable[[Any, Dict[str, Any]], Any])
 
 # WhenFilter accepts the current answers dict and must return True if the current
 # question should be asked or False otherwise
@@ -53,9 +50,9 @@ class Question(ABC):
     name: str
     message: str
     default: Optional[Any] = None
-    validate: Optional[Validator] = None
+    validate: Optional[ValidationFunc] = None
     convert: Optional[Converter] = None
-    when: Optional[Callable[[Dict[str, Any]], bool]] = None
+    when: Optional[WhenFilter] = None
     _style: Optional[Style] = None
 
     def __init__(self,
@@ -63,9 +60,9 @@ class Question(ABC):
                  message: str,
                  *,
                  default: Optional[Any] = None,
-                 validate: Optional[Callable[[List[Any]], bool]] = None,
-                 convert: Optional[Callable[[Any], Any]] = None,
-                 when: Optional[Callable[[Dict[str, Any]], bool]] = None) -> None:
+                 validate: Optional[ValidationFunc] = None,
+                 convert: Optional[Converter] = None,
+                 when: Optional[WhenFilter] = None) -> None:
         self.name = name
         self.message = message
         self.default = default
@@ -79,10 +76,12 @@ class Question(ABC):
     def ask(self, answers: Dict[str, Any]) -> Any:
         while True:
             raw_answer = self._interact(answers)
-            if not self.validate or self.validate(answers, raw_answer):
+            if not self.validate or self.validate(raw_answer, answers):
                 break
-        answer = self.convert(answers, raw_answer) if self.convert else raw_answer
-        return answer
+        return self._apply_convertor(raw_answer, answers)
+
+    def _apply_convertor(self, raw_answer: Any, answers: Dict[str, Any]) -> Any:
+        return self.convert(raw_answer, answers) if self.convert else raw_answer
 
     def _interact(self, answers: Dict[str, Any]) -> Any: ...
 

@@ -96,6 +96,7 @@ class Control(FormattedTextControl):
 class Checkbox(Question):
 
     ctrl: Control
+    convert_each: bool
 
     def __init__(self,
                  name: str,
@@ -104,10 +105,17 @@ class Checkbox(Question):
                  choices: List[Choice | str],
                  validate: Optional[Callable[[List[Any]], bool]] = None,
                  convert: Optional[Callable[[Any], Any]] = None,
+                 convert_each: bool = True,
                  when: Optional[Callable[[Dict[str, Any]], bool]] = None,
                  checked_char: Optional[str] = None,
                  unchecked_char: Optional[str] = None,
                  ):
+
+        if validate is not None:
+            raise NotImplementedError("validate functions are not implemented for Radio yet")
+
+        self.convert_each = convert_each
+
         super().__init__(
             name,
             message,
@@ -139,6 +147,14 @@ class Checkbox(Question):
             checked_char=checked_char,
             unchecked_char=unchecked_char
         )
+
+    def _apply_convertor(self, raw_answer: List[Any], answers: Dict[str, Any]) -> Any:
+        if not self.convert:
+            return raw_answer
+        if self.convert_each:
+            return [self.convert(answer) for answer in raw_answer]
+        else:
+            return self.convert(raw_answer)
 
     def _interact(self, answers: Dict[str, Any]) -> List[Any]:
         layout = Layout(HSplit([Window(content=self.ctrl)]))
