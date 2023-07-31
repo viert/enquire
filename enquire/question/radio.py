@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any, Dict, List, Tuple
+from typing import Optional, Any, Dict, List, Tuple
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from prompt_toolkit.layout.controls import FormattedTextControl
@@ -6,7 +6,7 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.application import Application
 
-from .base import Question, Choice
+from .base import Question, Choice, WhenFilter, Converter, ValidationFunc
 
 
 class Control(FormattedTextControl):
@@ -98,9 +98,9 @@ class Radio(Question):
                  *,
                  choices: List[Choice | str],
                  default: Optional[int] = None,
-                 validate: Optional[Callable[[List[Any]], bool]] = None,
-                 convert: Optional[Callable[[Any], Any]] = None,
-                 when: Optional[Callable[[Dict[str, Any]], bool]] = None,
+                 validate: Optional[ValidationFunc] = None,
+                 convert: Optional[Converter] = None,
+                 when: Optional[WhenFilter] = None,
                  checked_char: Optional[str] = None,
                  unchecked_char: Optional[str] = None,
                  ):
