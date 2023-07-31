@@ -17,7 +17,7 @@ class Text(Question):
 
         kwargs = {}
         if self.default:
-            kwargs["default"] = self.default
+            kwargs["default"] = str(self.default)
 
         if self.validate:
             kwargs["validator"] = Validator.from_callable(lambda v: self.validate(v, answers))
