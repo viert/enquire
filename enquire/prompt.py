@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 from prompt_toolkit.styles import Style
 
 from .question.base import BaseQuestion
+from .question.boolean import Boolean
 from .style import DEFAULT_STYLE
 
 
@@ -19,3 +20,7 @@ def prompt(questions: List[BaseQuestion], style: Optional[Style] = None) -> Dict
         answers[question.name] = answer
 
     return answers
+
+
+def confirm(message: str, default: Optional[bool] = True):
+    return prompt([Boolean("confirm", message, default=default)]).get("confirm")

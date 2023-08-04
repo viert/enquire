@@ -27,3 +27,7 @@ def is_match(pattern: Pattern) -> ValidationFunc:
 
 def is_fullmatch(pattern: Pattern) -> ValidationFunc:
     return lambda c, _: pattern.fullmatch(c) is not None
+
+
+def is_not_empty(current: str, _: Dict[str, Any]) -> bool:
+    return current != ""
