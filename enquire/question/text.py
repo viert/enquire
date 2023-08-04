@@ -12,7 +12,7 @@ class Text(Question):
     def _interact(self, answers: Dict[str, Any]) -> Any:
         tokens = [
             ("class:qmark", "?"),
-            ("class:question", f" {self.message}  "),
+            ("class:question", f" {self.message} "),
         ]
 
         kwargs = {}
