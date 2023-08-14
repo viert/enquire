@@ -9,6 +9,10 @@ from prompt_toolkit.application import Application
 from .base import Question, Choice, WhenFilter, Converter, ValidationFunc
 
 
+ARROW_DOWN = "\u21ca"
+ARROW_UP = "\u21c8"
+
+
 class Control(FormattedTextControl):
 
     idx: int
@@ -18,17 +22,34 @@ class Control(FormattedTextControl):
     checked_char: str = "\u25c9"
     unchecked_char: str = "\u25ef"
 
+    max_choices_visible: int
+
+    start: int
+    end: int
+    wrap: bool
+
     def __init__(self,
                  prompt: str,
                  choices: List[Choice],
                  active_idx: int,
                  *,
                  checked_char: Optional[str] = None,
-                 unchecked_char: Optional[str] = None):
+                 unchecked_char: Optional[str] = None,
+                 max_choices_visible: int = 10,
+                 wrap: bool = True):
 
         self.prompt = prompt
         self.choices = choices
         self.idx = active_idx
+        self.max_choices_visible = max_choices_visible
+        self.wrap = wrap
+
+        if self.max_choices_visible >= len(choices):
+            self.start = 0
+            self.end = len(choices)
+        else:
+            self.start = max(0, active_idx - max_choices_visible + 1)
+            self.end = self.start + max_choices_visible
 
         if checked_char is not None:
             self.checked_char = checked_char
@@ -59,15 +80,26 @@ class Control(FormattedTextControl):
 
     def _get_tokens(self) -> List[Tuple[str, str]]:
         tokens = self._get_prompt()
-        for idx, choice in enumerate(self.choices):
+
+        choices = self.choices[self.start:self.end]
+
+        for idx, choice in enumerate(choices):
+            idx = self.start + idx
             selected = idx == self.idx
+
+            arrow = " "
+            if 0 < self.start == idx:
+                arrow = ARROW_UP
+            elif self.end < len(self.choices) and idx == self.end - 1:
+                arrow = ARROW_DOWN
+
             if hasattr(choice, "render"):
                 tokens.extend(choice.render())
             elif selected:
-                tokens.append(("class:checkbox-selected", f" {self.checked_char} "))
+                tokens.append(("class:checkbox-selected", f"{arrow} {self.checked_char} "))
                 tokens.append(("class:choice-selected", choice.name))
             elif choice.active:
-                tokens.append(("class:checkbox-unselected", f" {self.unchecked_char} "))
+                tokens.append(("class:checkbox-unselected", f"{arrow} {self.unchecked_char} "))
                 tokens.append(("class:choice-unselected", choice.name))
             else:
                 tokens.append(("", "   ")),
@@ -75,22 +107,51 @@ class Control(FormattedTextControl):
             tokens.append(("", "\n"))
         return tokens
 
+    def adjust_win(self):
+        if self.idx < self.start:
+            self.start = self.idx
+            self.end = self.start + self.max_choices_visible
+        elif self.idx >= self.end:
+            self.end = self.idx + 1
+            self.start = self.end - self.max_choices_visible
+
     def move_cursor_down(self) -> None:
+        idx = self.idx
         while True:
-            self.idx = (self.idx + 1) % len(self.choices)
+            idx += 1
+            if idx >= len(self.choices):
+                if self.wrap:
+                    idx = 0
+                else:
+                    idx -= 1
             if self.selected.active:
                 break
+            if idx == self.idx:
+                break
+        self.idx = idx
+        self.adjust_win()
 
     def move_cursor_up(self) -> None:
+        idx = self.idx
         while True:
-            self.idx = (self.idx - 1) % len(self.choices)
+            idx -= 1
+            if idx < 0:
+                if self.wrap:
+                    idx = len(self.choices) - 1
+                else:
+                    idx += 1
             if self.selected.active:
                 break
+            if idx == self.idx:
+                break
+        self.idx = idx
+        self.adjust_win()
 
 
 class Radio(Question):
 
     ctrl: Control
+    _max_height: int
 
     def __init__(self,
                  name: str,
@@ -103,9 +164,15 @@ class Radio(Question):
                  when: Optional[WhenFilter] = None,
                  checked_char: Optional[str] = None,
                  unchecked_char: Optional[str] = None,
+                 max_choices_visible: int = 10,
+                 wrap: bool = True
                  ):
         if validate is not None:
             raise NotImplementedError("validate functions are not implemented for Radio yet")
+        if len(choices) > max_choices_visible:
+            self._max_height = max_choices_visible + 3
+        else:
+            self._max_height = len(choices) + 2
         super().__init__(
             name,
             message,
@@ -142,11 +209,12 @@ class Radio(Question):
             act_choices,
             act_idx,
             checked_char=checked_char,
-            unchecked_char=unchecked_char
+            unchecked_char=unchecked_char,
+            wrap=wrap,
         )
 
     def _interact(self, answers: Dict[str, Any]) -> Any:
-        layout = Layout(HSplit([Window(content=self.ctrl)]))
+        layout = Layout(HSplit([Window(content=self.ctrl, height=self._max_height)]))
         kb = KeyBindings()
 
         @kb.add("down", eager=True)
