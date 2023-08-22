@@ -124,7 +124,7 @@ class Control(FormattedTextControl):
                     idx = 0
                 else:
                     idx -= 1
-            if self.selected.active:
+            if self.choices[idx].active:
                 break
             if idx == self.idx:
                 break
@@ -140,7 +140,7 @@ class Control(FormattedTextControl):
                     idx = len(self.choices) - 1
                 else:
                     idx += 1
-            if self.selected.active:
+            if self.choices[idx].active:
                 break
             if idx == self.idx:
                 break
