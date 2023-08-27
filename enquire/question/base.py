@@ -12,6 +12,9 @@ Converter = TypeVar("Converter", bound=Callable[[Any, Dict[str, Any]], Any])
 # question should be asked or False otherwise
 WhenFilter = TypeVar("WhenFilter", bound=Callable[[Dict[str, Any]], bool])
 
+ARROW_DOWN = "\u21ca"
+ARROW_UP = "\u21c8"
+
 
 class Choice:
 

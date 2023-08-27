@@ -1,32 +1,18 @@
 from typing import Optional, Any, Dict, List, Tuple
 from prompt_toolkit.layout.containers import Window
 from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
-from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.application import Application
-
-from .base import Question, Choice, WhenFilter, Converter, ValidationFunc
-
-
-ARROW_DOWN = "\u21ca"
-ARROW_UP = "\u21c8"
+from .base import Question, Choice, WhenFilter, Converter, ValidationFunc, ARROW_UP, ARROW_DOWN
+from .wrappable import Wrappable
 
 
-class Control(FormattedTextControl):
+class Control(Wrappable):
 
-    idx: int
     prompt: str
-    choices: List[Choice]
-
     checked_char: str = "\u25c9"
     unchecked_char: str = "\u25ef"
-
-    max_choices_visible: int
-
-    start: int
-    end: int
-    wrap: bool
 
     def __init__(self,
                  prompt: str,
@@ -37,30 +23,20 @@ class Control(FormattedTextControl):
                  unchecked_char: Optional[str] = None,
                  max_choices_visible: int = 10,
                  wrap: bool = True):
-
+        super().__init__(
+            choices=choices,
+            active_idx=active_idx,
+            max_choices_visible=max_choices_visible,
+            wrap=wrap,
+            text=self._get_tokens,
+            show_cursor=False,
+        )
         self.prompt = prompt
-        self.choices = choices
-        self.idx = active_idx
-        self.max_choices_visible = max_choices_visible
-        self.wrap = wrap
-
-        if self.max_choices_visible >= len(choices):
-            self.start = 0
-            self.end = len(choices)
-        else:
-            self.start = max(0, active_idx - max_choices_visible + 1)
-            self.end = self.start + max_choices_visible
 
         if checked_char is not None:
             self.checked_char = checked_char
         if unchecked_char is not None:
             self.unchecked_char = unchecked_char
-
-        super().__init__(self._get_tokens, show_cursor=False)
-
-    @property
-    def selected(self) -> Choice:
-        return self.choices[self.idx]
 
     @property
     def _separator_tokens(self) -> Tuple[str, str]:
@@ -107,46 +83,6 @@ class Control(FormattedTextControl):
             tokens.append(("", "\n"))
         return tokens
 
-    def adjust_win(self):
-        if self.idx < self.start:
-            self.start = self.idx
-            self.end = self.start + self.max_choices_visible
-        elif self.idx >= self.end:
-            self.end = self.idx + 1
-            self.start = self.end - self.max_choices_visible
-
-    def move_cursor_down(self) -> None:
-        idx = self.idx
-        while True:
-            idx += 1
-            if idx >= len(self.choices):
-                if self.wrap:
-                    idx = 0
-                else:
-                    idx -= 1
-            if self.choices[idx].active:
-                break
-            if idx == self.idx:
-                break
-        self.idx = idx
-        self.adjust_win()
-
-    def move_cursor_up(self) -> None:
-        idx = self.idx
-        while True:
-            idx -= 1
-            if idx < 0:
-                if self.wrap:
-                    idx = len(self.choices) - 1
-                else:
-                    idx += 1
-            if self.choices[idx].active:
-                break
-            if idx == self.idx:
-                break
-        self.idx = idx
-        self.adjust_win()
-
 
 class Radio(Question):
 
@@ -165,8 +101,7 @@ class Radio(Question):
                  checked_char: Optional[str] = None,
                  unchecked_char: Optional[str] = None,
                  max_choices_visible: int = 10,
-                 wrap: bool = True
-                 ):
+                 wrap: bool = True):
         if validate is not None:
             raise NotImplementedError("validate functions are not implemented for Radio yet")
         if len(choices) > max_choices_visible:
@@ -210,6 +145,7 @@ class Radio(Question):
             act_idx,
             checked_char=checked_char,
             unchecked_char=unchecked_char,
+            max_choices_visible=max_choices_visible,
             wrap=wrap,
         )
 
